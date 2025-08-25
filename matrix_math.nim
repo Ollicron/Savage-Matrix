@@ -458,6 +458,28 @@ func `*`(t:Transform,v:Vector3D):Vector3D{.inline.}=
     t[2,0]*v.x + t[2,1]*v.y + t[2,2]*v.z + t[2,3]
   )
 
+# Function to get a rotation matrix from a normalized quaternion
+proc getRotationMatrixLH(quat: Quat): Matrix3D =
+  let q = normalizeQuat(quat)
+  
+  let
+    x2 = q.x * q.x
+    y2 = q.y * q.y
+    z2 = q.z * q.z
+    xy = q.x * q.y
+    xz = q.x * q.z
+    yz = q.y * q.z
+    wx = q.w * q.x
+    wy = q.w * q.y
+    wz = q.w * q.z
+
+  # Flip the signs that correspond to the left-hand rule
+  result = [
+    [1.0 - 2.0*(y2 + z2),  2.0*(xy + wz),      2.0*(xz - wy)],
+    [2.0*(xy - wz),        1.0 - 2.0*(x2 + z2), 2.0*(yz + wx)],
+    [2.0*(xz + wy),        2.0*(yz - wx),      1.0 - 2.0*(x2 + y2)]
+  ]
+
 
 
 when isMainModule:

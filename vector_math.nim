@@ -121,6 +121,16 @@ func `*`*(q1, q2: Quat): Quat {.inline.} =
   result.z =  q1.w*q2.z - q1.x*q2.y + q1.y*q2.x + q1.z*q2.w
   result.w =  q1.w*q2.w + q1.x*q2.x + q1.y*q2.y + q1.z*q2.z
 
+# Function to normalize a quaternion
+func normalizeQuat(q: Quat): Quat {.inline.}=
+  let len = sqrt(q.x*q.x + q.y*q.y + q.z*q.z + q.w*q.w)
+  if len == 0.0:
+    raise newException(ValueError,"Cannot normalize a zero-length quaternion")
+  result.x = q.x / len
+  result.y = q.y / len
+  result.z = q.z / len
+  result.w = q.w / len
+
 # Function to rotate vector v using quaternion q
 proc transformLeftHand(v: Vector3D, q: Quat): Vector3D =
   let b = vector(q.x, q.y,q.z)
