@@ -10,6 +10,27 @@ import
   std/[math],
   os, times
 
+# Create the first set of vector ops
+template makeVectorOps(op: untyped) =
+  func op*(A, B: Vector2D): Vector2D {.inline.} =
+    result = Vector2D(x: op(A[0], B[0]), y: op(A[1], B[1]))
+
+  func op*(A, B: Vector3D): Vector3D {.inline.} =
+    result = Vector3D(x: op(A[0], B[0]), y: op(A[1], B[1]), z: op(A[2], B[2]))
+
+  func op*(A, B: Vector4D): Vector4D {.inline.} =
+    result = Vector4D(x: op(A[0], B[0]), y: op(A[1], B[1]), z: op(A[2], B[2]),
+        w: op(A[3], B[3]))
+
+
+
+makeVectorOps(`+`)
+makeVectorOps(`-`)
+makeVectorOps(`*`)
+makeVectorOps(`/`)
+makeVectorOps(`min`)
+makeVectorOps(`max`)
+makeVectorOps(`mod`)
 
 #[ Procedures/Functions ]#
 
@@ -93,32 +114,26 @@ func `-`*(A, B: Point3D): Point3D {.inline.} =
 func `-`*(A: Point3D, B: Vector3D): Point3D {.inline.} =
     result = Point3D(x: `-`(A.x, B.x), y: `-`(A.y, B.y), z: `-`(A.z, B.z))
 
+# Function to multiply quaternions together; the purpose is to perform rotation with q1 first then q2
+func `*`*(q1, q2: Quat): Quat {.inline.} =
+  result.x =  q1.w*q2.x + q1.x*q2.w - q1.y*q2.z + q1.z*q2.y
+  result.y =  q1.w*q2.y + q1.x*q2.z + q1.y*q2.w - q1.z*q2.x
+  result.z =  q1.w*q2.z - q1.x*q2.y + q1.y*q2.x + q1.z*q2.w
+  result.w =  q1.w*q2.w + q1.x*q2.x + q1.y*q2.y + q1.z*q2.z
+
+# Function to rotate vector v using quaternion q
+proc transformLeftHand(v: Vector3D, q: Quat): Vector3D =
+  let b = vector(q.x, q.y,q.z)
+  let b2 = dot(b, b)
+  result = scale(v,(q.w*q.w - b2)) + scale(b,(2*dot(v, b))) - scale(cross(b, v),(2*q.w))
+
+
 
 #[ Templates ]#
 
 
 
-# Create the first set of vector ops
-template makeVectorOps(op: untyped) =
-  func op*(A, B: Vector2D): Vector2D {.inline.} =
-    result = Vector2D(x: op(A[0], B[0]), y: op(A[1], B[1]))
 
-  func op*(A, B: Vector3D): Vector3D {.inline.} =
-    result = Vector3D(x: op(A[0], B[0]), y: op(A[1], B[1]), z: op(A[2], B[2]))
-
-  func op*(A, B: Vector4D): Vector4D {.inline.} =
-    result = Vector4D(x: op(A[0], B[0]), y: op(A[1], B[1]), z: op(A[2], B[2]),
-        w: op(A[3], B[3]))
-
-
-
-makeVectorOps(`+`)
-makeVectorOps(`-`)
-makeVectorOps(`*`)
-makeVectorOps(`/`)
-makeVectorOps(`min`)
-makeVectorOps(`max`)
-makeVectorOps(`mod`)
 
 
 # Make ops that allow mutable compound assignment operation
@@ -166,7 +181,9 @@ makeRejs(Vector4D)
 
 
 when isMainModule:
-  let vec1 = vector(3, 4)
-  let vec2 = vector(1, 0)
+  var v = Vector3D(x: 1.0, y: 0.0, z: 0.0)       # vector along X
+  var q = Quat(x: 0.0, y: 0.707, z: 0.0, w: 0.707)  # 90° around Y
 
-  echo reject(vec1, vec2)
+  let vRot = transformLeftHand(v, q)
+  echo "Original vector: ", v
+  echo "Rotated vector:  ", vRot

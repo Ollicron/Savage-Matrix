@@ -402,6 +402,46 @@ func `*`*(a, b: Transform): Transform {.inline.}=
   result[3,2] = a[3,0]*b[0,2] + a[3,1]*b[1,2] + a[3,2]*b[2,2] + a[3,3]*b[3,2]
   result[3,3] = a[3,0]*b[0,3] + a[3,1]*b[1,3] + a[3,2]*b[2,3] + a[3,3]*b[3,3]
 
+
+func inverse(t: Transform): Transform{.inline.} =
+  let
+    a = Vector3D(x: t[0,0], y: t[0,1], z: t[0,2])
+    b = Vector3D(x: t[1,0], y: t[1,1], z: t[1,2])
+    c = Vector3D(x: t[2,0], y: t[2,1], z: t[2,2])
+    d = Vector3D(x: t[0,3], y: t[1,3], z: t[2,3])  # translation in last column
+
+  var s = cross(a, b)
+  var tvec = cross(c, d)
+  let invDet = 1.0 / dot(s, c)
+
+  s = Vector3D(x: s.x*invDet, y: s.y*invDet, z: s.z*invDet)
+  tvec = Vector3D(x: tvec.x*invDet, y: tvec.y*invDet, z: tvec.z*invDet)
+  let v = Vector3D(x: c.x*invDet, y: c.y*invDet, z: c.z*invDet)
+
+  let r0 = cross(b, v)
+  let r1 = cross(v, a)
+
+  result[0,0] = r0.x
+  result[0,1] = r0.y
+  result[0,2] = r0.z
+  result[0,3] = -dot(b, tvec)
+
+  result[1,0] = r1.x
+  result[1,1] = r1.y
+  result[1,2] = r1.z
+  result[1,3] = dot(a, tvec)
+
+  result[2,0] = s.x
+  result[2,1] = s.y
+  result[2,2] = s.z
+  result[2,3] = -dot(d, s)
+
+  # bottom row = [0,0,0,1] for affine
+  result[3,0] = 0.0
+  result[3,1] = 0.0
+  result[3,2] = 0.0
+  result[3,3] = 1.0
+
 # Function to move a point using a transform
 func `*`(t:Transform,p:Point3D):Point3D{.inline.}=
   result = point3D(
@@ -422,11 +462,15 @@ func `*`(t:Transform,v:Vector3D):Vector3D{.inline.}=
 
 when isMainModule:
 
-  let rot = Matrix3D(mat:[[1.0, 2.0, 3.0],[5.0, 6.0, 7.0],[9.0, 8.0, 7.0]])
+  var H = Transform(mat:[
+    [1.0, 7.0, 9.0, 0.0],  # row 0
+    [2.0, 1.0, 0.0, 0.0],  # row 1
+    [3.0, 4.0, 1.0, 0.0],  # row 2
+    [1.0, 9.0, 3.0, 1.0]   # row 3
+  ])
 
-  let tvec = vector(5.0, 4.0, 3.0)
+  let Hinv = inverse(H)
+  let identity = H * Hinv
 
-  var A = transform(rot, tvec)  # works
-  A[0,0] = 4.0                  # now mutation works
-
-  echo A
+  echo "Transform * Inverse ="
+  echo(identity)
